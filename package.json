@@ -4,9 +4,13 @@
   "description": "learning backend with code and chai",
   "license": "ISC",
   "author": "Ankita Sah",
-  "type": "commonjs",
+  "type": "module",
   "main": "index.js",
   "scripts": {
+    "dev":"nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
