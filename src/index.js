@@ -1,13 +1,15 @@
 // require("dotenv").config({path: "./env"});
 // isse bhi chl jaayga but better version h joh use krte h because import db here require
 
-import dotenv from "dotenv";
-import connectDB from "./db/index.js";
-const app = express();
 // import express from "express";
 
+import dotenv from "dotenv";
+import connectDB from "./db/index.js";
+import { app } from "./app.js";
+// const app = express();
+
 dotenv.config({
-    path: "./env"
+    path: "./.env"
 })
 
 connectDB()
@@ -24,6 +26,7 @@ connectDB()
 .catch((error)=>{
     console.log("mongodb connection failed !!!! ",error);
 })
+
 
 
 
