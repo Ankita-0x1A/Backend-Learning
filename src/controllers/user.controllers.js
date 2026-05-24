@@ -10,7 +10,7 @@ const registerUser= asyncHandler(async(req,res)=>{
     // first check your usermpdel then proceed with further
    
     //STEP1: get information from frontend --------------------------------------------->
-    const {fullname,username,email,passward}=req.body;
+    const {fullname,username,email,password}=req.body;
     console.log("email",email);
 
 
@@ -19,7 +19,7 @@ const registerUser= asyncHandler(async(req,res)=>{
                      //     throw ApiError(400,"full name is required");
                      // }-----can check using if else
         if(
-            [fullname,username,email,passward].some((field)=>
+            [fullname,username,email,password].some((field)=>
                 field?.trim()==="")
         ){
             throw new ApiError(400,"All field  is required");
@@ -32,7 +32,7 @@ const registerUser= asyncHandler(async(req,res)=>{
 
 
     //STEP3: check krenge user already exist or not------------------------------------------------>
-        const userExist= User.findOne({
+        const userExist= await User.findOne({
             $or: [{ username },{ email }]
         })
 
@@ -44,7 +44,12 @@ const registerUser= asyncHandler(async(req,res)=>{
     //STEP4: check for img and avatar----------------------------------------------------------------------->
         const avatarLocalPath= req.files?.avatar[0]?.path;
         console.log(avatarLocalPath);
-        const coverImageLocalPath= req.files?.coverImage[0]?.path;
+        // const coverImageLocalPath= req.files?.coverImage[0]?.path;
+
+        let coverImageLocalPath;
+        if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length>0){
+            coverImageLocalPath=req.files.coverImage[0].path;
+        }
 
         if(!avatarLocalPath){
             throw new ApiError(400,"avatar file is required");
@@ -53,6 +58,10 @@ const registerUser= asyncHandler(async(req,res)=>{
 
     const avatar= await uploadOnCloudinary(avatarLocalPath);
     const coverImage=await uploadOnCloudinary(coverImageLocalPath);
+
+//     console.log(req.files);
+// console.log("Avatar Path:", avatarLocalPath);
+// console.log("Cover Path:", coverImageLocalPath);
 
     if(!avatar){
         throw new ApiError(400,"avatar file is required");
@@ -65,13 +74,13 @@ const registerUser= asyncHandler(async(req,res)=>{
         avatar:avatar.url,
         coverImage: coverImage?.url || "",
         email,
-        passward,
+        password,
         username: username.toLowerCase()
     })
 
     //STEP7: remove pswd and token field from res
-    const createdUser= await User.findById(user_id).select(
-        "-passward -refreshToken"
+    const createdUser= await User.findById(user._id).select(
+        "-password -refreshToken"
     )   // by mongodb 
 
     //STEP 8: check for user crestion
