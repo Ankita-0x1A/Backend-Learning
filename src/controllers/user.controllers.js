@@ -1,6 +1,5 @@
 import {asyncHandler} from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/ApiError.js"
-// import { FileSpreadsheet } from "lucide-react";
 import { User } from "../models/user.models.js";
 import {uploadOnCloudinary} from "../utils/FileUpload.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -8,13 +7,13 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 const generateAccessTokenAndRefreshToken= async(userId)=>{
     try{
         const user=await User.findById(userId)
-        const AcessToken= await generateAccessToken()
-        const RefrehToken=await generateRefreshToken()
+        const AccessToken= await user.generateAccessToken()
+        const RefreshToken=await  user.generateRefreshToken()
 
-        user.RefrehToken= RefrehToken
+        user.refreshToken= RefreshToken
         await user.save({validateBeforeSave:false})
 
-        return {AcessToken,RefrehToken}
+        return {AccessToken,RefreshToken}
 
     }catch(err){
         throw new ApiError(500,"smthg went wrong while generating tokens")
@@ -115,8 +114,10 @@ const loginUser=asyncHandler(async(req,res)=>{
     //req body--> data
     const {username,email,password}= req.body;
 
+    console.log(req.body);
+
     //enter username or email se login
-    if(!username || !email){
+    if(!(username || email)){
         throw new ApiError(400,"email or password is required");
     }
 
@@ -131,7 +132,7 @@ const loginUser=asyncHandler(async(req,res)=>{
     }
 
     // password check
-    const isPasswordValid= await isPasswordValid(password);
+    const isPasswordValid= await user.isPasswordCorrect(password);
 
     if(!isPasswordValid){
         throw new ApiError(401,"Invalid User credentials")
@@ -139,9 +140,9 @@ const loginUser=asyncHandler(async(req,res)=>{
 
     //access and refresh token
 
-    const {AcessToken,RefrehToken}=await generateAccessTokenAndRefreshToken(user._id)
+    const {AccessToken,RefreshToken}=await generateAccessTokenAndRefreshToken(user._id)
 
-    const logIn= await user.findById(user._id).select("-password -refreshToken")
+    const logIn= await User.findById(user._id).select("-password -refreshToken")
 
      //send cookie - small data saved in browser by server
 
@@ -151,22 +152,22 @@ const loginUser=asyncHandler(async(req,res)=>{
      }
 
      return res.status(200).
-     cookie("acessToken",AcessToken,option).
-     cookie("refreshToken",RefrehToken,option)
+     cookie("acecssToken",AccessToken,option).
+     cookie("refreshToken",RefreshToken,option)
      .json(
         new ApiResponse(
             200,
             {
-                user: logIn,AcessToken,RefrehToken
+                user: logIn,AccessToken,RefreshToken
             },
             "user logged in succcesfully"
         )
     )
 })
 
-const logOutUser= await asyncHandler(async(req,res)=>{
+const logOutUser= asyncHandler(async(req,res)=>{
     await User.findByIdAndUpdate(
-        req.user.user._id,
+        req.user._id,
         {
             $set:{
                 refreshToken: undefined
@@ -182,9 +183,9 @@ const logOutUser= await asyncHandler(async(req,res)=>{
         secure:true
      }
 
-    return req.status(200)
-    .clearCookie("accessToken".option)
-    .clearCookie("RefreshToken".option)
+    return res.status(200)
+    .clearCookie("accessToken",option)
+    .clearCookie("RefreshToken",option)
     .json(new ApiResponse(200,{},"user logged out"))
 })
 
